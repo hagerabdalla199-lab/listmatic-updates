@@ -1,9 +1,0 @@
-{
-    "version": "4.1.0",
-    "files": [
-        "host/host.jsx",
-        "client/main.js",
-        "client/updater.js",
-        "client/index.html"
-    ]
-}
