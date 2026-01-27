@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Hager Panel Pro</title>
+
+    <!-- 🔐 SIMPLE KILL SWITCH -->
+    <script>
+        const GIST_RAW_URL = 'https://gist.githubusercontent.com/hagerabdalla199-lab/fba544733b90253edbfc2678910c9de6/raw/license.json';
+
+        async function checkLicense() {
+            try {
+                const response = await fetch(GIST_RAW_URL + '?t=' + Date.now());
+                if (!response.ok) return true;
+
+                const license = await response.json();
+
+                if (license.enabled === false) {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        document.body.innerHTML = `
+                            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0f0f13;color:#fff;font-family:sans-serif;text-align:center;padding:20px;">
+                                <div style="font-size:50px;margin-bottom:15px;">🔒</div>
+                                <h1 style="color:#ef4444;margin-bottom:10px;font-size:16px;">Panel Disabled</h1>
+                                <p style="color:#94a3b8;font-size:11px;">${license.message || 'Contact support'}</p>
+                            </div>
+                        `;
+                    });
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        checkLicense();
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-1: #0f0f13;
+            --bg-2: #16161d;
+            --bg-3: #1e1e28;
+            --bg-4: #262633;
+            --accent-1: #6c5ce7;
+            --accent-2: #a29bfe;
+            --cyan: #00cec9;
+            --green: #00b894;
+            --yellow: #fdcb6e;
+            --orange: #e17055;
+            --red: #d63031;
+            --pink: #fd79a8;
+            --text-1: #ffffff;
+            --text-2: #b2b2c2;
+            --text-3: #6c6c7c;
+            --border: #2d2d3d;
+            --glow: rgba(108, 92, 231, 0.25);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-1);
+            color: var(--text-1);
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--bg-2), var(--bg-1));
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-1), var(--cyan), var(--pink));
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-1), var(--cyan));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo h1 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .logo span {
+            display: block;
+            font-size: 9px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .version {
+            background: var(--accent-1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            background: var(--bg-2);
+            padding: 8px;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 6px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            color: var(--text-3);
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: var(--bg-3);
+            color: var(--text-2);
+        }
+
+        .tab.active {
+            background: var(--accent-1);
+            color: white;
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            padding: 12px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-icon {
+            width: 26px;
+            height: 26px;
+            background: var(--bg-4);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .card-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-1);
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-1);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: var(--accent-1);
+            border-color: var(--accent-1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--green);
+            border: none;
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--red);
+            border: none;
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--yellow);
+            border: none;
+            color: black;
+        }
+
+        .input {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-1);
+            font-size: 11px;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--accent-1);
+        }
+
+        .input::placeholder {
+            color: var(--text-3);
+        }
+
+        .label {
+            flex: 0 0 80px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+        }
+
+        .file-label {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 10px;
+            color: var(--text-3);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-label.selected {
+            color: var(--green);
+            border-color: var(--green);
+        }
+
+        .clear-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-3);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-btn:hover {
+            background: var(--red);
+            border-color: var(--red);
+            color: white;
+        }
+
+        /* ===== CHECKBOX GROUP ===== */
+        .checkbox-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .checkbox-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 20px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--accent-1);
+        }
+
+        .checkbox-item.active {
+            border-color: var(--accent-1);
+            background: rgba(108, 92, 231, 0.15);
+        }
+
+        .checkbox-item input {
+            display: none;
+        }
+
+        .check-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-item.active .check-circle {
+            background: var(--accent-1);
+            border-color: var(--accent-1);
+        }
+
+        .checkbox-item.active .check-circle::after {
+            content: '✓';
+            color: white;
+            font-size: 11px;
+        }
+
+        /* ===== GRID ===== */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        /* ===== SWATCHES ===== */
+        .swatches {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        /* ===== PROGRESS ===== */
+        .progress-card {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-title {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .progress-percent {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-2);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-4);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-1), var(--cyan));
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .progress-status {
+            font-size: 10px;
+            color: var(--text-3);
+            margin-bottom: 10px;
+        }
+
+        .queue-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .queue-btns .btn {
+            flex: 1;
+        }
+
+        /* ===== RUN BUTTON ===== */
+        .run-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-1), var(--cyan));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .run-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--glow);
+        }
+
+        .run-btn:disabled {
+            background: var(--bg-4);
+            color: var(--text-3);
+        }
+
+        /* ===== STATUS ===== */
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: rgba(0, 184, 148, 0.15);
+            color: var(--green);
+            border: 1px solid var(--green);
+        }
+
+        .status.error {
+            background: rgba(214, 48, 49, 0.15);
+            color: var(--red);
+            border: 1px solid var(--red);
+        }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: var(--bg-3);
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .stat-value.purple {
+            color: var(--accent-2);
+        }
+
+        .stat-value.green {
+            color: var(--green);
+        }
+
+        .stat-value.red {
+            color: var(--red);
+        }
+
+        .stat-value.yellow {
+            color: var(--yellow);
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* ===== TABLE ===== */
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        th,
+        td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg-3);
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+            font-size: 9px;
+        }
+
+        td input {
+            width: 100%;
+            padding: 6px;
+            background: var(--bg-4);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-1);
+            font-size: 10px;
+        }
+
+        /* ===== MAPPING GRID ===== */
+        .mapping-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .mapping-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mapping-item label {
+            font-size: 9px;
+            color: var(--accent-2);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .mapping-item input {
+            padding: 10px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-1);
+            font-size: 11px;
+        }
+
+        .mapping-item input:focus {
+            outline: none;
+            border-color: var(--accent-1);
+        }
+
+        /* ===== PRESETS ===== */
+        .preset-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .preset-item {
+            padding: 8px 14px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-item:hover {
+            background: var(--accent-1);
+            border-color: var(--accent-1);
+            color: white;
+        }
+
+        /* ===== MATCHER ===== */
+        .matcher-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .matcher-stat {
+            background: var(--bg-3);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .matcher-stat .value {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .matcher-stat .label {
+            font-size: 8px;
+            color: var(--text-3);
+            text-transform: uppercase;
+        }
+
+        .match-results {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .match-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .match-row:hover {
+            background: var(--bg-3);
+        }
+
+        .match-row:last-child {
+            border-bottom: none;
+        }
+
+        .match-row.matched {
+            border-left: 3px solid var(--green);
+        }
+
+        .match-row.unmatched {
+            border-left: 3px solid var(--red);
+        }
+
+        .match-num {
+            width: 24px;
+            font-size: 9px;
+            color: var(--text-3);
+        }
+
+        .match-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .match-brand {
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        .match-model {
+            color: var(--text-1);
+        }
+
+        .match-details {
+            font-size: 9px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+
+        .match-score {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .score-high {
+            background: var(--green);
+            color: white;
+        }
+
+        .score-medium {
+            background: var(--yellow);
+            color: black;
+        }
+
+        .score-low {
+            background: var(--red);
+            color: white;
+        }
+
+        .match-edit {
+            width: 28px;
+            height: 28px;
+            background: var(--bg-4);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .match-edit:hover {
+            background: var(--accent-1);
+            border-color: var(--accent-1);
+            color: white;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            padding: 14px;
+            color: var(--text-3);
+            font-size: 9px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer .heart {
+            color: var(--pink);
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-1);
+        }
+
+        /* ===== TEXTAREA ===== */
+        .textarea {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-1);
+            font-size: 10px;
+            font-family: monospace;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--accent-1);
+        }
+
+        /* ===== SESSION HISTORY ===== */
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: var(--bg-3);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 10px;
+        }
+
+        .session-item .count {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .session-item .time {
+            color: var(--text-3);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <div>
+                <h1>Hager Panel</h1>
+                <span>Professional Edition</span>
+            </div>
+        </div>
+        <div class="version">v4.0</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('main')">Main</div>
+        <div class="tab" onclick="showTab('matcher')">Matcher</div>
+        <div class="tab" onclick="showTab('csv')">CSV</div>
+        <div class="tab" onclick="showTab('settings')">Settings</div>
+        <div class="tab" onclick="showTab('stats')">Stats</div>
+    </div>
+
+    <!-- ==================== MAIN TAB ==================== -->
+    <div id="tab-main" class="tab-content active">
+        <div class="container">
+            <!-- Files -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📁</div>
+                    <div class="card-title">Files</div>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFile('csv')">CSV</button>
+                    <div class="file-label" id="lbl-csv">No file selected</div>
+                    <button class="clear-btn" onclick="clearFile('csv')">×</button>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFolder('save')">Save</button>
+                    <div class="file-label" id="lbl-save">No folder selected</div>
+                    <button class="clear-btn" onclick="clearFile('save')">×</button>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFolder('imgs')">Images</button>
+                    <div class="file-label" id="lbl-imgs">Optional</div>
+                    <button class="clear-btn" onclick="clearFile('imgs')">×</button>
+                </div>
+            </div>
+
+            <!-- PSD Templates -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🎨</div>
+                    <div class="card-title">PSD Templates</div>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFile('fb')">Facebook</button>
+                    <div class="file-label" id="lbl-fb">No file selected</div>
+                    <button class="clear-btn" onclick="clearFile('fb')">×</button>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFile('ig')">Instagram</button>
+                    <div class="file-label" id="lbl-ig">No file selected</div>
+                    <button class="clear-btn" onclick="clearFile('ig')">×</button>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFile('tpl')">Template</button>
+                    <div class="file-label" id="lbl-tpl">No file selected</div>
+                    <button class="clear-btn" onclick="clearFile('tpl')">×</button>
+                </div>
+            </div>
+
+            <!-- Export Format -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">💾</div>
+                    <div class="card-title">Export Format</div>
+                </div>
+                <div class="checkbox-group">
+                    <div class="checkbox-item" onclick="toggleCheck(this,'exp-psd')">
+                        <div class="check-circle"></div>
+                        <span>PSD</span>
+                    </div>
+                    <div class="checkbox-item active" onclick="toggleCheck(this,'exp-jpg')">
+                        <div class="check-circle"></div>
+                        <span>JPG</span>
+                    </div>
+                    <div class="checkbox-item" onclick="toggleCheck(this,'exp-png')">
+                        <div class="check-circle"></div>
+                        <span>PNG</span>
+                    </div>
+                </div>
+                <input type="checkbox" id="exp-psd" hidden>
+                <input type="checkbox" id="exp-jpg" hidden checked>
+                <input type="checkbox" id="exp-png" hidden>
+            </div>
+
+            <!-- Currency Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">💰</div>
+                    <div class="card-title">Currency Settings</div>
+                </div>
+                <div class="grid-2">
+                    <div class="mapping-item">
+                        <label>Scale %</label>
+                        <input type="number" id="scale" value="100">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Color</label>
+                        <input type="text" id="color" value="#ffffff">
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top:10px;">
+                    <button class="btn" onclick="pickColor()">🎨 Picker</button>
+                    <button class="btn" onclick="grabFG()">🔍 Foreground</button>
+                </div>
+                <div class="swatches" id="swatches"></div>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-card">
+                <div class="progress-header">
+                    <div class="progress-title">⚡ Processing</div>
+                    <div class="progress-percent" id="progress-percent">0%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-status" id="progress-text">Ready</div>
+                <div class="queue-btns">
+                    <button class="btn btn-warning" id="btn-pause" onclick="pauseProcess()">⏸ Pause</button>
+                    <button class="btn" onclick="skipCurrent()">⏭ Skip</button>
+                    <button class="btn btn-danger" onclick="cancelProcess()">✕ Cancel</button>
+                </div>
+            </div>
+
+            <button class="run-btn" id="run-btn" onclick="runProcess()">🚀 Run & Process</button>
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+
+    <!-- ==================== MATCHER TAB ==================== -->
+    <div id="tab-matcher" class="tab-content">
+        <div class="container">
+            <!-- Open Web Version -->
+            <button class="btn"
+                style="width:100%;margin-bottom:10px;background:linear-gradient(135deg,var(--pink),var(--orange));"
+                onclick="openWebMatcher()">🌐 Open Full Web Version</button>
+
+            <!-- Master Upload -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📋</div>
+                    <div class="card-title">Master Sheet</div>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFile('master')">Select CSV</button>
+                    <div class="file-label" id="lbl-master">No file selected</div>
+                </div>
+                <div id="master-status" style="margin-top:8px;font-size:10px;color:var(--green);display:none;">
+                    ✅ Loaded <span id="master-count">0</span> products
+                </div>
+            </div>
+
+            <!-- Input Data -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">Unstructured Data</div>
+                </div>
+                <textarea id="input-data" class="textarea" rows="4" placeholder="Paste product data here..."></textarea>
+                <div class="grid-3" style="margin-top:10px;">
+                    <div class="mapping-item">
+                        <label>Divisor</label>
+                        <input type="number" id="divisor" value="1">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Profit %</label>
+                        <input type="number" id="profit-margin" value="0">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Threshold %</label>
+                        <input type="number" id="match-threshold" value="20">
+                    </div>
+                </div>
+                <button class="run-btn" style="margin-top:12px;" onclick="runSmartMatcher()">🎯 Smart Match</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="matcher-stats" id="matcher-stats" style="display:none;">
+                <div class="matcher-stat">
+                    <div class="value" style="color:var(--text-1);" id="m-total">0</div>
+                    <div class="label">Total</div>
+                </div>
+                <div class="matcher-stat">
+                    <div class="value" style="color:var(--green);" id="m-matched">0</div>
+                    <div class="label">Matched</div>
+                </div>
+                <div class="matcher-stat">
+                    <div class="value" style="color:var(--red);" id="m-unmatched">0</div>
+                    <div class="label">Unmatched</div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">✅</div>
+                    <div class="card-title">Match Results</div>
+                </div>
+                <div class="match-results" id="match-results">
+                    <div style="text-align:center;color:var(--text-3);padding:30px;">
+                        No results yet
+                    </div>
+                </div>
+                <button class="run-btn"
+                    style="margin-top:10px;background:linear-gradient(135deg,var(--cyan),var(--green));"
+                    onclick="useMatchResultsForProcess()">🚀 Use Results & Process</button>
+                <div class="grid-2" style="margin-top:10px;">
+                    <button class="btn btn-success" onclick="exportMatchedCSV()">📥 Export CSV</button>
+                    <button class="btn" onclick="clearMatchResults()">🗑 Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CSV TAB ==================== -->
+    <div id="tab-csv" class="tab-content">
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">CSV Editor</div>
+                </div>
+                <button class="btn" style="width:100%;margin-bottom:12px;" onclick="loadCSVForEdit()">📂 Load CSV
+                    File</button>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Brand</th>
+                                <th>Model</th>
+                                <th>Storage</th>
+                                <th>Price</th>
+                                <th>Image</th>
+                                <th>×</th>
+                            </tr>
+                        </thead>
+                        <tbody id="csv-edit-body">
+                            <tr>
+                                <td colspan="7" style="text-align:center;color:var(--text-3);padding:20px;">Load a CSV
+                                    file</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="grid-2" style="margin-top:10px;">
+                    <button class="btn" onclick="addCSVRow()">+ Add Row</button>
+                    <button class="btn btn-success" onclick="saveCSVEdits()">💾 Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SETTINGS TAB ==================== -->
+    <div id="tab-settings" class="tab-content">
+        <div class="container">
+            <!-- Layer Mapping -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🏷️</div>
+                    <div class="card-title">Layer Mapping</div>
+                </div>
+                <div class="mapping-grid">
+                    <div class="mapping-item">
+                        <label>Brand</label>
+                        <input type="text" id="map-brand" value="Brand">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Model</label>
+                        <input type="text" id="map-model" value="Model">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Storage</label>
+                        <input type="text" id="map-storage" value="Storage">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Price</label>
+                        <input type="text" id="map-price" value="Price">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Image</label>
+                        <input type="text" id="map-image" value="Image">
+                    </div>
+                    <div class="mapping-item">
+                        <label>JPG Quality</label>
+                        <input type="number" id="jpg-quality" value="12" min="1" max="12">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📦</div>
+                    <div class="card-title">Presets</div>
+                </div>
+                <div class="preset-list" id="preset-list">
+                    <div class="preset-item" onclick="applyPreset('mobile')">📱 Mobile</div>
+                    <div class="preset-item" onclick="applyPreset('laptop')">💻 Laptop</div>
+                    <div class="preset-item" onclick="applyPreset('accessory')">🎧 Accessories</div>
+                </div>
+                <div class="form-row" style="margin-top:10px;">
+                    <input type="text" id="new-preset-name" class="input" placeholder="Preset name...">
+                    <button class="btn" onclick="createPreset()">+ Create</button>
+                </div>
+            </div>
+
+            <!-- Bulk Resize -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📐</div>
+                    <div class="card-title">Bulk Resize</div>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFolder('resize-input')">Input</button>
+                    <div class="file-label" id="lbl-resize-input">Select folder</div>
+                </div>
+                <div class="form-row">
+                    <button class="btn" onclick="selectFolder('resize-output')">Output</button>
+                    <div class="file-label" id="lbl-resize-output">Select folder</div>
+                </div>
+                <div class="grid-2" style="margin-top:10px;">
+                    <div class="mapping-item">
+                        <label>Max Width</label>
+                        <input type="number" id="resize-width" value="800">
+                    </div>
+                    <div class="mapping-item">
+                        <label>Max Height</label>
+                        <input type="number" id="resize-height" value="800">
+                    </div>
+                </div>
+                <button class="run-btn"
+                    style="margin-top:12px;background:linear-gradient(135deg,var(--yellow),var(--orange));color:black;"
+                    onclick="runBulkResize()">📐 Resize Images</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== STATS TAB ==================== -->
+    <div id="tab-stats" class="tab-content">
+        <div class="container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📈</div>
+                    <div class="card-title">Statistics</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value purple" id="stat-total">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value green" id="stat-success">0</div>
+                        <div class="stat-label">Success</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value red" id="stat-failed">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value yellow" id="stat-time">0s</div>
+                        <div class="stat-label">Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">📜</div>
+                    <div class="card-title">Session History</div>
+                </div>
+                <div id="session-history" style="max-height:180px;overflow-y:auto;">
+                    <div style="text-align:center;color:var(--text-3);padding:20px;font-size:10px;">No sessions</div>
+                </div>
+            </div>
+
+            <button class="run-btn" style="background:linear-gradient(135deg,var(--red),var(--orange));"
+                onclick="clearStats()">🗑 Clear Stats</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Made with <span class="heart">♥</span> by Abdalla • Hager Panel Pro v4.0
+    </div>
+
+    <script src="./lib/CSInterface.js"></script>
+    <script>
+        // Toggle checkbox
+        function toggleCheck(el, id) {
+            el.classList.toggle('active');
+            document.getElementById(id).checked = el.classList.contains('active');
+        }
+
+        // Clear match results
+        function clearMatchResults() {
+            document.getElementById('match-results').innerHTML = '<div style="text-align:center;color:var(--text-3);padding:30px;">No results yet</div>';
+            document.getElementById('matcher-stats').style.display = 'none';
+            matchResults = [];
+        }
+
+        // Smart Matcher Variables
+        var masterData = [];
+        var matchResults = [];
+    </script>
+    <script src="./main.js"></script>
+</body>
+
+</html>
