@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Product Matcher Pro v2</title>
+
+    <!-- 🔐 SIMPLE KILL SWITCH -->
+    <script>
+        const GIST_RAW_URL = 'https://gist.githubusercontent.com/hagerabdalla199-lab/fba544733b90253edbfc2678910c9de6/raw/license.json';
+
+        async function checkLicense() {
+            try {
+                const response = await fetch(GIST_RAW_URL + '?t=' + Date.now());
+                if (!response.ok) return true;
+
+                const license = await response.json();
+
+                if (license.enabled === false) {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        document.body.innerHTML = `
+                            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#fff;font-family:'Tajawal',sans-serif;text-align:center;padding:20px;">
+                                <div style="font-size:60px;margin-bottom:15px;">🔒</div>
+                                <h1 style="color:#ef4444;margin-bottom:10px;font-size:20px;">الأداة معطلة مؤقتاً</h1>
+                                <p style="color:#94a3b8;font-size:13px;">${license.message || 'تواصل مع الدعم الفني'}</p>
+                            </div>
+                        `;
+                    });
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        checkLicense();
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+
+        * {
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        .input-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+        }
+
+        .input-box:focus {
+            border-color: #10b981;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .matched-row {
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+            border-right: 3px solid #10b981;
+        }
+
+        .unmatched-row {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent);
+            border-right: 3px solid #ef4444;
+        }
+
+        .brand-apple {
+            color: #a3a3a3;
+        }
+
+        .brand-samsung {
+            color: #1428a0;
+        }
+
+        .brand-mi,
+        .brand-xiaomi {
+            color: #ff6900;
+        }
+
+        .brand-oppo {
+            color: #1ba34d;
+        }
+
+        .brand-vivo {
+            color: #415fff;
+        }
+
+        .brand-huawei {
+            color: #cf0a2c;
+        }
+
+        .brand-honor {
+            color: #0ab3c5;
+        }
+
+        .brand-realme {
+            color: #f5c600;
+        }
+
+        .brand-lenovo {
+            color: #e2231a;
+        }
+
+        .brand-nothing {
+            color: #ffffff;
+        }
+
+        .brand-jbl {
+            color: #ff6600;
+        }
+
+        .brand-anker {
+            color: #00b4d8;
+        }
+
+        .shortcut-hint {
+            font-size: 10px;
+            background: #334155;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 4px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 78, 59, 0.2));
+        }
+
+        .toast {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-4">
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] space-y-2"></div>
+
+    <div class="max-w-[1600px] mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <span class="text-2xl">🎯</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Smart Product Matcher <span
+                            class="text-emerald-400">Pro</span></h1>
+                    <p class="text-xs text-slate-400">v2.0 - All Features Edition</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="saveSession()"
+                    class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm flex items-center gap-2"
+                    title="Ctrl+S">
+                    <span class="shortcut-hint">Ctrl+S</span> 💾 حفظ الجلسة
+                </button>
+                <button onclick="loadSession()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">📂
+                    تحميل جلسة</button>
+                <button onclick="undo()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm"
+                    title="Ctrl+Z">
+                    <span class="shortcut-hint">Ctrl+Z</span> ↩️
+                </button>
+                <button onclick="redo()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm"
+                    title="Ctrl+Y">
+                    <span class="shortcut-hint">Ctrl+Y</span> ↪️
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Panel -->
+        <div id="stats-panel" class="glass rounded-2xl p-4 mb-6 hidden">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="stats-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-white" id="stat-total">0</div>
+                    <div class="text-xs text-slate-400">إجمالي المنتجات</div>
+                </div>
+                <div class="stats-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-emerald-400" id="stat-matched">0</div>
+                    <div class="text-xs text-slate-400">مطابق</div>
+                </div>
+                <div class="stats-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-red-400" id="stat-unmatched">0</div>
+                    <div class="text-xs text-slate-400">غير مطابق</div>
+                </div>
+                <div class="stats-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-amber-400" id="stat-duplicates">0</div>
+                    <div class="text-xs text-slate-400">مكرر</div>
+                </div>
+                <div class="stats-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-violet-400" id="stat-rate">0%</div>
+                    <div class="text-xs text-slate-400">نسبة النجاح</div>
+                </div>
+                <div class="stats-card rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold text-cyan-400" id="stat-brands">0</div>
+                    <div class="text-xs text-slate-400">عدد البراندات</div>
+                </div>
+            </div>
+            <!-- Brand breakdown -->
+            <div id="brand-breakdown" class="mt-4 flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+            <!-- Left Panel -->
+            <div class="lg:col-span-4 space-y-4">
+                <!-- Master Upload -->
+                <div class="glass rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <span
+                            class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">1</span>
+                        شيت الشركة (Master)
+                    </h2>
+                    <input type="file" id="master-file" accept=".xlsx,.xls,.csv" onchange="loadMaster(this)"
+                        class="w-full text-sm text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-emerald-600 file:text-white file:cursor-pointer">
+                    <div id="master-status" class="mt-3 text-sm text-emerald-400 hidden">
+                        ✅ تم تحميل <span id="master-count">0</span> منتج
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="glass rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <span
+                            class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">2</span>
+                        البيانات الغير منظمة
+                    </h2>
+                    <textarea id="input-data" rows="8"
+                        class="w-full input-box rounded-xl p-3 text-sm font-mono resize-none"
+                        placeholder="الصق البيانات هنا..."></textarea>
+                    <button onclick="processProducts()"
+                        class="w-full mt-3 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold transition-all">
+                        🚀 بدء المطابقة الذكية
+                    </button>
+                </div>
+
+                <!-- Settings -->
+                <div class="glass rounded-2xl p-5">
+                    <h2 class="text-sm font-bold text-white mb-3 flex items-center gap-2">⚙️ الإعدادات</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-slate-400">القسمة على</label>
+                            <input type="number" id="divisor" value="1"
+                                class="w-full input-box p-2 rounded-lg text-center text-emerald-400 font-bold mt-1">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">نسبة الربح %</label>
+                            <input type="number" id="profit-margin" value="0"
+                                class="w-full input-box p-2 rounded-lg text-center text-amber-400 font-bold mt-1">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">حد التطابق %</label>
+                            <input type="number" id="match-threshold" value="20" min="0" max="100"
+                                class="w-full input-box p-2 rounded-lg text-center text-violet-400 font-bold mt-1">
+                        </div>
+                        <div class="flex items-end">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="auto-learn" checked class="w-4 h-4 accent-emerald-500">
+                                <span class="text-xs text-slate-400">تعلّم التصحيحات</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="lg:col-span-8">
+                <div class="glass rounded-2xl p-5">
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-sm font-bold text-white">📊 النتائج</h2>
+                            <span id="result-count" class="text-xs text-slate-400">(0)</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Filters -->
+                            <select id="filter-status" onchange="applyFilters()"
+                                class="input-box px-3 py-1.5 rounded-lg text-xs">
+                                <option value="all">الكل</option>
+                                <option value="matched">مطابق فقط</option>
+                                <option value="unmatched">غير مطابق فقط</option>
+                                <option value="duplicates">مكرر فقط</option>
+                            </select>
+                            <select id="filter-brand" onchange="applyFilters()"
+                                class="input-box px-3 py-1.5 rounded-lg text-xs">
+                                <option value="all">كل البراندات</option>
+                            </select>
+                            <select id="sort-by" onchange="applyFilters()"
+                                class="input-box px-3 py-1.5 rounded-lg text-xs">
+                                <option value="index">الترتيب الأصلي</option>
+                                <option value="score-desc">النسبة (الأعلى)</option>
+                                <option value="score-asc">النسبة (الأقل)</option>
+                                <option value="brand">البراند</option>
+                                <option value="price-desc">السعر (الأعلى)</option>
+                                <option value="price-asc">السعر (الأقل)</option>
+                            </select>
+                            <!-- Export buttons -->
+                            <button onclick="exportCSV()"
+                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">CSV
+                                ⬇️</button>
+                            <button onclick="exportExcel()"
+                                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold">Excel
+                                ⬇️</button>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-700 max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-900 text-slate-300 sticky top-0">
+                                <tr>
+                                    <th class="p-2 text-right w-10">#</th>
+                                    <th class="p-2 text-right">BRAND</th>
+                                    <th class="p-2 text-right">MODEL</th>
+                                    <th class="p-2 text-right text-amber-400">STORAGE</th>
+                                    <th class="p-2 text-right text-emerald-400">PRICE</th>
+                                    <th class="p-2 text-right">IMAGE</th>
+                                    <th class="p-2 text-center text-violet-400 w-16">%</th>
+                                    <th class="p-2 text-center w-20">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learned Corrections Panel -->
+        <div class="glass rounded-2xl p-5 mb-6">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-white">🧠 التصحيحات المحفوظة (<span id="corrections-count">0</span>)
+                </h2>
+                <button onclick="clearCorrections()" class="text-xs text-red-400 hover:text-red-300">مسح الكل</button>
+            </div>
+            <div id="corrections-list" class="flex flex-wrap gap-2 text-xs max-h-24 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-2xl w-full max-w-2xl border border-slate-600 max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center sticky top-0 bg-slate-800 z-10">
+                <h3 class="font-bold text-white">✏️ تعديل المنتج</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400">BRAND</label>
+                        <input type="text" id="edit-brand" class="w-full input-box p-2 rounded-lg mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400">MODEL</label>
+                        <input type="text" id="edit-model" class="w-full input-box p-2 rounded-lg mt-1">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400">STORAGE</label>
+                        <input type="text" id="edit-storage"
+                            class="w-full input-box p-2 rounded-lg mt-1 text-amber-400">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400">PRICE</label>
+                        <input type="text" id="edit-price"
+                            class="w-full input-box p-2 rounded-lg mt-1 text-emerald-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400">IMAGE</label>
+                    <input type="text" id="edit-image" class="w-full input-box p-2 rounded-lg mt-1">
+                </div>
+                <div id="image-preview" class="hidden">
+                    <img id="preview-img" src="" class="max-h-32 rounded-lg mx-auto">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="saveEdit()"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg font-bold">
+                        💾 حفظ
+                    </button>
+                    <button onclick="applyToSimilar()"
+                        class="flex-1 bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-lg font-bold">
+                        📋 تطبيق على المشابه
+                    </button>
+                </div>
+            </div>
+
+            <!-- Master Search -->
+            <div class="border-t border-slate-700 p-4">
+                <p class="text-xs text-slate-400 mb-2 font-bold">🔍 اختر من الماستر:</p>
+                <input type="text" id="search-input" oninput="searchInMaster(this.value)" placeholder="ابحث..."
+                    class="w-full input-box p-2 rounded-lg mb-3">
+                <div id="search-results" class="max-h-40 overflow-y-auto space-y-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+        let masterData = [];
+        let results = [];
+        let filteredResults = [];
+        let editingIdx = null;
+        let undoStack = [];
+        let redoStack = [];
+        let corrections = JSON.parse(localStorage.getItem('product_corrections') || '{}');
+
+        // Brand colors map
+        const BRAND_COLORS = {
+            'apple': '#a3a3a3', 'samsung': '#1428a0', 'mi': '#ff6900', 'xiaomi': '#ff6900',
+            'oppo': '#1ba34d', 'vivo': '#415fff', 'huawei': '#cf0a2c', 'honor': '#0ab3c5',
+            'realme': '#f5c600', 'lenovo': '#e2231a', 'nothing': '#ffffff', 'jbl': '#ff6600',
+            'anker': '#00b4d8', 'moto': '#5c5c5c', 'poco': '#f5c600', 'tecno': '#0066ff'
+        };
+
+        // Variant keywords
+        const VARIANT_KEYWORDS = ['pro max', 'pro', 'plus', 'ultra', 'max', 'air', 'lite', 'fe', 'mini', 'se'];
+
+        // ============================================
+        // TOAST NOTIFICATIONS
+        // ============================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : type === 'warning' ? 'bg-amber-600' : 'bg-emerald-600';
+            toast.className = `toast ${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============================================
+        // UNDO/REDO
+        // ============================================
+        function saveState() {
+            undoStack.push(JSON.stringify(results));
+            if (undoStack.length > 50) undoStack.shift();
+            redoStack = [];
+        }
+
+        function undo() {
+            if (undoStack.length === 0) return showToast('لا يوجد ما يمكن التراجع عنه', 'warning');
+            redoStack.push(JSON.stringify(results));
+            results = JSON.parse(undoStack.pop());
+            applyFilters();
+            showToast('تم التراجع');
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return showToast('لا يوجد ما يمكن إعادته', 'warning');
+            undoStack.push(JSON.stringify(results));
+            results = JSON.parse(redoStack.pop());
+            applyFilters();
+            showToast('تم الإعادة');
+        }
+
+        // ============================================
+        // SESSION SAVE/LOAD
+        // ============================================
+        function saveSession() {
+            const session = {
+                results,
+                masterData,
+                timestamp: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(session)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `session_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            showToast('تم حفظ الجلسة');
+        }
+
+        function loadSession() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const session = JSON.parse(e.target.result);
+                        results = session.results || [];
+                        masterData = session.masterData || [];
+                        document.getElementById('master-status').classList.remove('hidden');
+                        document.getElementById('master-count').textContent = masterData.length;
+                        applyFilters();
+                        updateStats();
+                        showToast('تم تحميل الجلسة');
+                    } catch (err) {
+                        showToast('خطأ في قراءة الملف', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // ============================================
+        // CORRECTIONS LEARNING
+        // ============================================
+        function saveCorrection(inputKey, master) {
+            if (!document.getElementById('auto-learn').checked) return;
+            corrections[inputKey] = {
+                brand: master.brand,
+                model: master.model,
+                storage: master.storage,
+                image: master.image
+            };
+            localStorage.setItem('product_corrections', JSON.stringify(corrections));
+            renderCorrections();
+        }
+
+        function applyCorrections(productName) {
+            const key = normalize(productName);
+            return corrections[key] || null;
+        }
+
+        function renderCorrections() {
+            const list = document.getElementById('corrections-list');
+            const keys = Object.keys(corrections);
+            document.getElementById('corrections-count').textContent = keys.length;
+
+            list.innerHTML = keys.slice(0, 50).map(key => {
+                const c = corrections[key];
+                return `<span class="bg-slate-700 px-2 py-1 rounded">${c.brand} ${c.model}</span>`;
+            }).join('');
+        }
+
+        function clearCorrections() {
+            if (confirm('هل تريد مسح كل التصحيحات المحفوظة؟')) {
+                corrections = {};
+                localStorage.removeItem('product_corrections');
+                renderCorrections();
+                showToast('تم مسح التصحيحات');
+            }
+        }
+
+        // ============================================
+        // TEXT PROCESSING
+        // ============================================
+        function normalize(text) {
+            return String(text || '').toLowerCase().replace(/[–—-]/g, ' ').replace(/[^a-z0-9\u0600-\u06FF\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function tokenize(text) {
+            return normalize(text).split(' ').filter(t => t.length >= 1);
+        }
+
+        function parseProduct(line) {
+            const original = line.trim();
+            let text = original.replace(/\s*(EGP|LE|جنيه)\s*$/i, '');
+
+            const structuredMatch = text.match(/^(.+?)\s*[–—-]\s*(\d+)\s*[–—-]\s*(\d+)\s*$/);
+            if (structuredMatch) {
+                return { original, name: structuredMatch[1].trim(), storage: structuredMatch[2] + 'GB', price: parseInt(structuredMatch[3]) };
+            }
+
+            const priceMatch = text.match(/(\d{3,5})\s*$/);
+            let price = 0;
+            if (priceMatch) {
+                price = parseInt(priceMatch[1]);
+                text = text.slice(0, priceMatch.index).trim();
+            }
+
+            let storage = '';
+            const storageMatch = text.match(/(\d{2,4})\s*GB?/i);
+            if (storageMatch) storage = storageMatch[1] + 'GB';
+
+            return { original, name: text, storage, price };
+        }
+
+        function splitProducts(input) {
+            let lines = input.split(/[\n\r]+/).map(l => l.trim()).filter(l => l);
+            if (lines.length === 1 && lines[0].length > 50) {
+                const text = lines[0];
+                const products = [];
+                const pattern = /(\d{3,5})(?=[A-Z]|$)/g;
+                let lastEnd = 0, match;
+                while ((match = pattern.exec(text)) !== null) {
+                    const priceEnd = match.index + match[1].length;
+                    const chunk = text.slice(lastEnd, priceEnd).trim();
+                    if (chunk) products.push(chunk);
+                    lastEnd = priceEnd;
+                }
+                if (lastEnd < text.length) {
+                    const rem = text.slice(lastEnd).trim();
+                    if (rem.length > 5) products.push(rem);
+                }
+                if (products.length > 1) return products;
+            }
+            return lines;
+        }
+
+        // ============================================
+        // MATCHING ENGINE
+        // ============================================
+        function extractVariant(text) {
+            const n = normalize(text);
+            for (const v of VARIANT_KEYWORDS) if (n.includes(v)) return v;
+            return '';
+        }
+
+        function extractModelNumber(text) {
+            const n = normalize(text);
+            const m = n.match(/(?:iphone|galaxy|redmi|note|ipad|tab|watch|s|a|m|x)\s*(\d+)/i);
+            if (m) return m[1];
+            const any = n.match(/\b(\d{1,2})\b/);
+            return any ? any[1] : '';
+        }
+
+        function calculateMatchScore(inputTokens, masterTokens, masterStr, inputText, masterText) {
+            if (!inputTokens.length || !masterTokens.length) return 0;
+            let score = 0;
+
+            const iv = extractVariant(inputText), mv = extractVariant(masterText);
+            if (iv && mv) {
+                if (iv === mv) score += 30;
+                else return 0;
+            } else if (iv && !mv) return 0;
+            else if (!iv && mv) score -= 10;
+
+            const im = extractModelNumber(inputText), mm = extractModelNumber(masterText);
+            if (im && mm) {
+                if (im === mm) score += 40;
+                else return 0;
+            }
+
+            let matched = 0;
+            for (const t of inputTokens) {
+                if (masterTokens.includes(t)) { score += 15; matched++; }
+                else if (masterStr.includes(t)) { score += 10; matched++; }
+            }
+            for (const t of masterTokens) {
+                if (t.length >= 2 && !inputTokens.includes(t) && normalize(inputText).includes(t)) score += 5;
+            }
+            if (inputTokens.length > 0) score += (matched / inputTokens.length) * 15;
+
+            return Math.min(100, Math.max(0, Math.round(score)));
+        }
+
+        function findBestMatch(productName, inputStorage) {
+            // Check corrections first
+            const corrected = applyCorrections(productName);
+            if (corrected) return { match: corrected, score: 100, fromCorrection: true };
+
+            const inputTokens = tokenize(productName);
+            if (!inputTokens.length || !masterData.length) return { match: null, score: 0 };
+
+            let bestMatch = null, bestScore = 0;
+            for (const master of masterData) {
+                let score = calculateMatchScore(inputTokens, master.tokens, master.normalized, productName, master.fullName);
+                if (inputStorage && master.storage) {
+                    const iS = inputStorage.replace(/[^\d]/g, ''), mS = master.storage.replace(/[^\d]/g, '');
+                    if (iS === mS) score = Math.min(100, score + 5);
+                }
+                if (score > bestScore) { bestScore = score; bestMatch = master; }
+            }
+            return { match: bestMatch, score: bestScore };
+        }
+
+        // ============================================
+        // MASTER LOADING
+        // ============================================
+        function loadMaster(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const wb = XLSX.read(e.target.result, { type: 'array' });
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+
+                    masterData = json.map((row, idx) => {
+                        const get = (keys) => {
+                            for (const k of keys) {
+                                const f = Object.entries(row).find(([key]) => key.toUpperCase().includes(k.toUpperCase()));
+                                if (f?.[1]) return String(f[1]).trim();
+                            }
+                            return '';
+                        };
+                        const brand = get(['BRAND']), model = get(['MODEL', 'NAME']), storage = get(['STORAGE', 'MEMORY']);
+                        const price = get(['PRICE']), image = get(['IMAGE', 'IMG']);
+                        const fullName = `${brand} ${model}`.trim();
+                        return { idx: idx + 2, brand, model, storage, price, image, fullName, normalized: normalize(fullName), tokens: tokenize(fullName) };
+                    }).filter(m => m.brand || m.model);
+
+                    document.getElementById('master-status').classList.remove('hidden');
+                    document.getElementById('master-count').textContent = masterData.length;
+                    populateBrandFilter();
+                    showToast(`تم تحميل ${masterData.length} منتج`);
+                } catch (err) {
+                    showToast('خطأ في قراءة الملف', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function populateBrandFilter() {
+            const brands = [...new Set(masterData.map(m => m.brand.toUpperCase()))].sort();
+            const select = document.getElementById('filter-brand');
+            select.innerHTML = '<option value="all">كل البراندات</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+        }
+
+        // ============================================
+        // MAIN PROCESSING
+        // ============================================
+        function processProducts() {
+            const input = document.getElementById('input-data').value.trim();
+            if (!input) return showToast('أدخل بيانات', 'error');
+            if (!masterData.length) return showToast('ارفع الماستر أولاً', 'error');
+
+            const divisor = parseFloat(document.getElementById('divisor').value) || 1;
+            const profitMargin = parseFloat(document.getElementById('profit-margin').value) || 0;
+            const threshold = parseInt(document.getElementById('match-threshold').value) || 20;
+
+            const products = splitProducts(input);
+            saveState();
+
+            results = products.map((product, i) => {
+                const parsed = parseProduct(product);
+                const { match, score, fromCorrection } = findBestMatch(parsed.name, parsed.storage);
+                let finalPrice = Math.ceil(parsed.price / divisor);
+                if (profitMargin > 0) finalPrice = Math.ceil(finalPrice * (1 + profitMargin / 100));
+                const finalStorage = parsed.storage || (match ? match.storage : '-') || '-';
+
+                if (match && score >= threshold) {
+                    return {
+                        idx: i, original: product, brand: match.brand, model: match.model,
+                        storage: finalStorage, price: finalPrice, image: match.image || '',
+                        score, matched: true, fromCorrection: fromCorrection || false
+                    };
+                }
+                return {
+                    idx: i, original: product, brand: '?', model: parsed.name,
+                    storage: finalStorage, price: finalPrice, image: '', score, matched: false
+                };
+            });
+
+            detectDuplicates();
+            applyFilters();
+            updateStats();
+            document.getElementById('stats-panel').classList.remove('hidden');
+            showToast(`تم معالجة ${results.length} منتج`);
+        }
+
+        function detectDuplicates() {
+            const seen = {};
+            results.forEach(r => {
+                const key = `${r.brand}_${r.model}_${r.storage}`.toLowerCase();
+                if (seen[key]) {
+                    r.isDuplicate = true;
+                    seen[key].isDuplicate = true;
+                } else {
+                    seen[key] = r;
+                }
+            });
+        }
+
+        // ============================================
+        // STATISTICS
+        // ============================================
+        function updateStats() {
+            const total = results.length;
+            const matched = results.filter(r => r.matched).length;
+            const unmatched = total - matched;
+            const duplicates = results.filter(r => r.isDuplicate).length;
+            const rate = total > 0 ? Math.round((matched / total) * 100) : 0;
+            const brands = [...new Set(results.filter(r => r.matched).map(r => r.brand))].length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-matched').textContent = matched;
+            document.getElementById('stat-unmatched').textContent = unmatched;
+            document.getElementById('stat-duplicates').textContent = duplicates;
+            document.getElementById('stat-rate').textContent = rate + '%';
+            document.getElementById('stat-brands').textContent = brands;
+
+            // Brand breakdown
+            const brandCounts = {};
+            results.filter(r => r.matched).forEach(r => {
+                brandCounts[r.brand] = (brandCounts[r.brand] || 0) + 1;
+            });
+            const breakdown = document.getElementById('brand-breakdown');
+            breakdown.innerHTML = Object.entries(brandCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([brand, count]) => {
+                    const color = BRAND_COLORS[brand.toLowerCase()] || '#64748b';
+                    return `<span class="px-2 py-1 rounded text-xs" style="background:${color}20;color:${color};border:1px solid ${color}">${brand}: ${count}</span>`;
+                }).join('');
+        }
+
+        // ============================================
+        // FILTERS & SORTING
+        // ============================================
+        function applyFilters() {
+            const status = document.getElementById('filter-status').value;
+            const brand = document.getElementById('filter-brand').value;
+            const sortBy = document.getElementById('sort-by').value;
+
+            filteredResults = [...results];
+
+            if (status === 'matched') filteredResults = filteredResults.filter(r => r.matched);
+            else if (status === 'unmatched') filteredResults = filteredResults.filter(r => !r.matched);
+            else if (status === 'duplicates') filteredResults = filteredResults.filter(r => r.isDuplicate);
+
+            if (brand !== 'all') filteredResults = filteredResults.filter(r => r.brand.toUpperCase() === brand);
+
+            if (sortBy === 'score-desc') filteredResults.sort((a, b) => b.score - a.score);
+            else if (sortBy === 'score-asc') filteredResults.sort((a, b) => a.score - b.score);
+            else if (sortBy === 'brand') filteredResults.sort((a, b) => a.brand.localeCompare(b.brand));
+            else if (sortBy === 'price-desc') filteredResults.sort((a, b) => b.price - a.price);
+            else if (sortBy === 'price-asc') filteredResults.sort((a, b) => a.price - b.price);
+            else filteredResults.sort((a, b) => a.idx - b.idx);
+
+            renderResults();
+        }
+
+        // ============================================
+        // RENDER
+        // ============================================
+        function renderResults() {
+            const tbody = document.getElementById('results-table');
+            tbody.innerHTML = '';
+
+            filteredResults.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                const rowClass = r.matched ? 'matched-row' : 'unmatched-row';
+                const dupClass = r.isDuplicate ? 'ring-2 ring-amber-500' : '';
+                tr.className = `border-b border-slate-700/50 hover:bg-slate-800/50 ${rowClass} ${dupClass}`;
+
+                const brandColor = BRAND_COLORS[r.brand.toLowerCase()] || '#94a3b8';
+                const scoreColor = r.score >= 70 ? 'text-emerald-400' : r.score >= 40 ? 'text-amber-400' : 'text-red-400';
+
+                tr.innerHTML = `
+            <td class="p-2 text-slate-500 text-xs">${r.idx + 1}</td>
+            <td class="p-2 font-bold" style="color:${brandColor}">${r.brand}</td>
+            <td class="p-2 text-sm">${r.model}</td>
+            <td class="p-2 text-amber-400 font-mono text-xs">${r.storage}</td>
+            <td class="p-2 text-emerald-400 font-bold font-mono">${r.price.toLocaleString()}EGP</td>
+            <td class="p-2 text-xs text-slate-400 truncate max-w-[80px]">${r.image || '-'}</td>
+            <td class="p-2 text-center"><span class="${scoreColor} font-bold text-xs">${r.score}%</span></td>
+            <td class="p-2 text-center">
+                <button onclick="openEdit(${r.idx})" class="p-1.5 bg-slate-700 hover:bg-emerald-600 rounded transition text-xs">✏️</button>
+            </td>
+        `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('result-count').textContent = `(${filteredResults.length}/${results.length})`;
+        }
+
+        // ============================================
+        // EDIT MODAL
+        // ============================================
+        function openEdit(idx) {
+            editingIdx = idx;
+            const r = results[idx];
+            document.getElementById('edit-brand').value = r.brand;
+            document.getElementById('edit-model').value = r.model;
+            document.getElementById('edit-storage').value = r.storage;
+            document.getElementById('edit-price').value = r.price;
+            document.getElementById('edit-image').value = r.image || '';
+
+            // Image preview
+            if (r.image && (r.image.startsWith('http') || r.image.endsWith('.png') || r.image.endsWith('.jpg'))) {
+                document.getElementById('preview-img').src = r.image;
+                document.getElementById('image-preview').classList.remove('hidden');
+            } else {
+                document.getElementById('image-preview').classList.add('hidden');
+            }
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+            document.getElementById('search-input').value = r.original.slice(0, 30);
+            searchInMaster(r.original.slice(0, 30));
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            editingIdx = null;
+        }
+
+        function saveEdit() {
+            if (editingIdx === null) return;
+            saveState();
+
+            const r = results[editingIdx];
+            const oldName = r.original;
+
+            r.brand = document.getElementById('edit-brand').value;
+            r.model = document.getElementById('edit-model').value;
+            r.storage = document.getElementById('edit-storage').value;
+            r.price = parseInt(document.getElementById('edit-price').value) || 0;
+            r.image = document.getElementById('edit-image').value;
+            r.matched = true;
+            r.score = 100;
+
+            // Learn this correction
+            saveCorrection(normalize(oldName), r);
+
+            applyFilters();
+            updateStats();
+            closeModal();
+            showToast('تم الحفظ');
+        }
+
+        function applyToSimilar() {
+            if (editingIdx === null) return;
+            saveState();
+
+            const source = results[editingIdx];
+            const sourceTokens = tokenize(source.original);
+            let count = 0;
+
+            results.forEach((r, i) => {
+                if (i === editingIdx || r.matched) return;
+                const rTokens = tokenize(r.original);
+                const overlap = sourceTokens.filter(t => rTokens.includes(t)).length;
+                if (overlap >= Math.min(2, sourceTokens.length - 1)) {
+                    r.brand = document.getElementById('edit-brand').value;
+                    r.model = document.getElementById('edit-model').value;
+                    r.storage = r.storage || document.getElementById('edit-storage').value;
+                    r.image = document.getElementById('edit-image').value;
+                    r.matched = true;
+                    r.score = 90;
+                    count++;
+                }
+            });
+
+            applyFilters();
+            updateStats();
+            closeModal();
+            showToast(`تم تطبيق على ${count + 1} منتج`);
+        }
+
+        function searchInMaster(query) {
+            const container = document.getElementById('search-results');
+            container.innerHTML = '';
+
+            if (!query || query.length < 2) {
+                masterData.slice(0, 15).forEach(m => addSearchResult(container, m));
+                return;
+            }
+
+            const qTokens = tokenize(query);
+            const matches = masterData
+                .map(m => ({ ...m, ss: calculateMatchScore(qTokens, m.tokens, m.normalized, query, m.fullName) }))
+                .filter(m => m.ss > 15)
+                .sort((a, b) => b.ss - a.ss)
+                .slice(0, 15);
+
+            matches.forEach(m => addSearchResult(container, m));
+        }
+
+        function addSearchResult(container, m) {
+            const div = document.createElement('div');
+            const color = BRAND_COLORS[m.brand.toLowerCase()] || '#64748b';
+            div.className = 'p-2 bg-slate-700/50 rounded hover:bg-emerald-600/30 cursor-pointer text-sm flex justify-between items-center';
+            div.innerHTML = `<div><span class="font-bold" style="color:${color}">${m.brand}</span> <span class="text-white">${m.model}</span> <span class="text-slate-400 text-xs">${m.storage}</span></div>`;
+            div.onclick = () => {
+                document.getElementById('edit-brand').value = m.brand;
+                document.getElementById('edit-model').value = m.model;
+                document.getElementById('edit-storage').value = m.storage || document.getElementById('edit-storage').value;
+                document.getElementById('edit-image').value = m.image;
+            };
+            container.appendChild(div);
+        }
+
+        // ============================================
+        // EXPORT
+        // ============================================
+        function exportCSV() {
+            if (!results.length) return showToast('لا توجد نتائج', 'error');
+            const rows = ['BRAND,MODEL,STORAGE,PRICE,IMAGE'];
+            results.forEach(r => {
+                const esc = s => `"${String(s || '').replace(/"/g, '""')}"`;
+                rows.push([esc(r.brand), esc(r.model), esc(r.storage), esc(r.price + 'EGP'), esc(r.image)].join(','));
+            });
+            const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `products_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            showToast('تم تصدير CSV');
+        }
+
+        function exportExcel() {
+            if (!results.length) return showToast('لا توجد نتائج', 'error');
+            const data = results.map(r => ({
+                BRAND: r.brand, MODEL: r.model, STORAGE: r.storage, PRICE: r.price + 'EGP', IMAGE: r.image
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Products');
+            XLSX.writeFile(wb, `products_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showToast('تم تصدير Excel');
+        }
+
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+            if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveSession(); }
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Init
+        renderCorrections();
+    </script>
+</body>
+
+</html>
